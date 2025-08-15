@@ -10,6 +10,10 @@ const categoryOptions = [
   'Food', 'Transport', 'Shopping', 'Bills', 'Salary', 'Investment', 'Other'
 ];
 
+const typeOptions = [
+  'INCOME', 'EXPENSE'
+];
+
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -180,6 +184,21 @@ const Transactions = () => {
                 <MenuItem key={option} value={option}>{option}</MenuItem>
               ))}
             </TextField>
+             <TextField
+              label="Type"
+              name="type"
+              value={form.type}
+              onChange={handleFormChange}
+              select
+              fullWidth
+              sx={{ mb: 2 }}
+              required
+            >
+              {typeOptions.map(option => (
+                <MenuItem key={option} value={option}>{option}</MenuItem>
+              ))}
+            </TextField>
+            
             <TextField
               label="Amount"
               name="amount"
