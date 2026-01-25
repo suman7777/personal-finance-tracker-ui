@@ -1,70 +1,146 @@
-# Getting Started with Create React App
+# Personal Finance Tracker (Frontend)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This repository contains the React frontend for the Personal Finance Tracker application. It was bootstrapped with Create React App and uses Material-UI (MUI) and Chart.js for the UI and charts.
 
-## Available Scripts
+This README documents how to run the frontend locally, relevant backend integration points (MySQL + Spring Boot), recent UI changes, and developer notes to help you continue working on the project.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Table of contents
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Quick start (frontend)
+- Backend (MySQL + Spring Boot) notes and SQL scripts
+- Recent UI changes (what I changed)
+- Project structure and important files
+- Development tips, common issues and troubleshooting
+- Testing & building
+- Contributing
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## Quick start (frontend)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Prerequisites
+- Node.js (>= 16 recommended) and npm
 
-### `npm run build`
+Install dependencies and start the dev server (PowerShell examples):
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```powershell
+cd 'c:\Users\suman\personal-finance-tracker'
+npm install
+npm start
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Open http://localhost:3000 in your browser. The app will reload when you make changes.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+If port 3000 is already in use, the dev server will prompt to use another port. You can also start with a different port manually:
 
-### `npm run eject`
+```powershell
+$env:PORT=3001; npm start
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Backend (MySQL + Spring Boot) — notes and SQL scripts
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+The backend Spring Boot application lives in the sibling folder `../personal-finance` (relative to this frontend). During the recent updates the backend was configured to use MySQL instead of H2/Postgres.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Files of interest (backend):
+- `personal-finance/src/main/resources/application.properties` — Spring datasource updated to MySQL (JDBC URL, driver, username/password, Hibernate dialect)
+- `personal-finance/mysql-setup.sql` — creates the database and a database user (example: `finance_user` / `finance_pass`).
+- `personal-finance/mysql-schema-and-testdata.sql` — schema (users, accounts, transactions, budgets) and example seed data.
 
-## Learn More
+Quick MySQL setup (example):
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+1. Start MySQL server (install if required).
+2. Run the setup script (adjust path and credentials as needed):
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```powershell
+mysql -u root -p < "c:\Users\suman\personal-finance\mysql-setup.sql"
+mysql -u finance_user -pfinance_pass < "c:\Users\suman\personal-finance\mysql-schema-and-testdata.sql"
+```
 
-### Code Splitting
+Notes:
+- The `finance_user` and `finance_pass` credentials used in these scripts are examples; change the password and update `application.properties` accordingly before deploying to production.
+- The backend endpoint consumed by the frontend is `http://localhost:8080/api/*` (for example `/api/dashboard-data`). Ensure the backend is running on port 8080 (default Spring Boot). See backend README for full instructions.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+## Recent UI changes (high level)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+I updated the frontend layout and several components to improve usability and conform to a banking-style top navigation. Key changes:
 
-### Making a Progressive Web App
+- Moved navigation from a left sidebar into a fixed top navigation bar (`src/App.js`). Top nav now shows icons and labels (labels hidden on xs screens).
+- Added a Profile menu (click avatar at top-right) with Profile / Settings / Logout and small icons. Menu navigates to `/users`, `/settings`, and `/auth` respectively.
+- Cleaned unused imports and commented out the Recurring nav/route (it still exists as a component but is not shown in the nav by default).
+- Dashboard (`src/components/Dashboard.js`): redesigned overview — single full-width Income vs Expense Line chart, INR currency formatting helper, loading spinner, and simplified summaries.
+- Accounts (`src/components/Accounts.js`): fixed dialog and form state handling, added form submit handler to POST new accounts to backend.
+- Currency display: amounts across components use Indian Rupee formatting (₹) via a helper `formatINR`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+These changes were committed and pushed to `origin/master` (recent commit message: "UI: move navigation to top, add profile menu, clean imports and polish header/avatar").
 
-### Advanced Configuration
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Project structure (important files)
 
-### Deployment
+- `src/App.js` — main layout, top navigation, routing and profile menu.
+- `src/components/Dashboard.js` — dashboard overview, charts, quick stats, accounts/transactions lists.
+- `src/components/Accounts.js` — list and create account dialog.
+- `src/components/RecurringPayments.js` — recurring payments component (route commented out in nav).
+- `package.json` — front-end dependencies and scripts.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Backend (separate repo folder):
+- `../personal-finance` — Spring Boot backend, `pom.xml`, `src/main/java`, `src/main/resources/application.properties`.
 
-### `npm run build` fails to minify
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Development tips and troubleshooting
+
+- Port conflicts: If `npm start` reports port 3000 is in use, either accept the alternative port it suggests or set `PORT` before running (PowerShell example above).
+- CRLF/line ending warnings: Git may warn about LF/CRLF changes on Windows; these are cosmetic but you can configure `.gitattributes` to enforce consistent endings if needed.
+- API data shape: The Dashboard relies on `/api/dashboard-data`. If charts appear empty, check the backend response — e.g., `pieData` may be empty; the dashboard now gracefully shows a loading spinner and avoids rendering empty charts.
+- Logout flow: The Profile menu currently navigates to `/auth` for logout. If you need to fully clear authentication state (localStorage, cookies, backend session), we can add logic to `handleLogout` in `src/App.js`.
+
+---
+
+## Testing and building
+
+- Run unit tests (if present):
+
+```powershell
+npm test
+```
+
+- Build for production:
+
+```powershell
+npm run build
+```
+
+---
+
+## Contributing
+
+- Make a feature branch off `master` (or open a PR against `master`):
+
+```powershell
+git checkout -b feat/your-feature
+```
+
+- Commit changes with a clear message and push to your fork/branch.
+- Open a pull request describing the change and any verification steps.
+
+If you'd like, I can open a PR for the recent UI work and add reviewers.
+
+---
+
+## Contact / Next steps
+
+If you want any of the following, tell me which and I'll implement it:
+
+- Add actual logout behavior (clear tokens and call backend logout)
+- Show user name/email in the profile menu and use a user avatar image
+- Re-enable or remove the Recurring module (it's currently commented out in the nav)
+- Add a dark-mode toggle wired to `darkMode` in `src/App.js`
+
+Thank you — happy to help keep improving the UI and complete any backend wiring you need.
