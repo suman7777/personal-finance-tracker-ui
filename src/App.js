@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline, Avatar, Box, IconButton, Typography, useMediaQuery } from '@mui/material';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { ThemeProvider, createTheme, CssBaseline, Avatar, Box, IconButton, Typography, Button, Menu, MenuItem, ListItemIcon, Divider } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import PaymentIcon from '@mui/icons-material/Payment';
 import SettingsIcon from '@mui/icons-material/Settings';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
 import Dashboard from './components/Dashboard';
 import Transactions from './components/Transactions';
 import Budgets from './components/Budgets';
-import Goals from './components/Goals';
+// Goals component is not currently routed from the top nav; remove import until used to keep bundle small
+// import Goals from './components/Goals';
 import Reports from './components/Reports';
 import Accounts from './components/Accounts';
-import RecurringPayments from './components/RecurringPayments';
+// RecurringPayments route has been commented out; keep import commented to avoid unused import warnings
+// import RecurringPayments from './components/RecurringPayments';
 import ImportExport from './components/ImportExport';
 import Settings from './components/Settings';
 import Auth from './components/Auth';
@@ -28,7 +28,8 @@ const sidebarNav = [
   { label: 'Transactions', path: '/transactions', icon: <ListAltIcon /> },
   { label: 'Accounts', path: '/accounts', icon: <AccountBalanceIcon /> },
   { label: 'Budgets', path: '/budgets', icon: <BarChartIcon /> },
-  { label: 'Recurring', path: '/recurring', icon: <PaymentIcon /> },
+  // Recurring removed from sidebar per request. Uncomment to restore.
+  // { label: 'Recurring', path: '/recurring', icon: <PaymentIcon /> },
   { label: 'Reports', path: '/reports', icon: <BarChartIcon /> },
   { label: 'Users', path: '/users', icon: <PersonIcon /> },
   { label: 'Import/Export', path: '/import-export', icon: <CloudUploadIcon /> },
@@ -37,9 +38,16 @@ const sidebarNav = [
 
 const AppContent = () => {
   const [darkMode, setDarkMode] = useState(false);
-  const isMobile = useMediaQuery('(max-width:600px)');
+  const [anchorEl, setAnchorEl] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const menuOpen = Boolean(anchorEl);
+
+  const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+  const handleProfile = () => { handleMenuClose(); navigate('/users'); };
+  const handleSettingsNav = () => { handleMenuClose(); navigate('/settings'); };
+  const handleLogout = () => { handleMenuClose(); navigate('/auth'); };
   const theme = createTheme({
     palette: {
       mode: darkMode ? 'dark' : 'light',
@@ -50,46 +58,74 @@ const AppContent = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f5f6fa' }}>
-        {/* Sidebar */}
-        <Box sx={{ width: 80, bgcolor: '#23272f', display: 'flex', flexDirection: 'column', alignItems: 'center', py: 2, borderRadius: 3, m: 2, boxShadow: 3, height: 'calc(100vh - 32px)', position: 'fixed', left: 0, top: 0, zIndex: 10 }}>
-          <Box sx={{ mb: 2, mt: 1 }}>
+      <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f5f6fa', flexDirection: 'column' }}>
+        {/* Top Navigation */}
+        <Box sx={{ width: '100%', bgcolor: '#23272f', display: 'flex', alignItems: 'center', py: 1, px: 2, boxShadow: 3, position: 'fixed', left: 0, top: 0, zIndex: 10, height: 72 }}>
+          <Box sx={{ mr: 2 }}>
             <Box sx={{ bgcolor: '#fff', borderRadius: 2, p: 1 }}>
               <BarChartIcon sx={{ color: '#1976d2', fontSize: 32 }} />
             </Box>
           </Box>
-          <Box sx={{ flex: 1, width: '100%' }}>
-            {sidebarNav.map((item, idx) => (
-              <IconButton
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: 1 }}>
+            {sidebarNav.map((item) => (
+              <Button
                 key={item.path}
                 onClick={() => navigate(item.path)}
+                startIcon={item.icon}
                 sx={{
-                  width: '100%',
-                  mb: 1.5,
-                  color: location.pathname === item.path ? '#1976d2' : '#fff',
-                  bgcolor: location.pathname === item.path ? '#e3edfa' : 'transparent',
+                  color: '#fff',
                   borderRadius: 2,
-                  '&:hover': { bgcolor: '#e3edfa', color: '#1976d2' },
-                  transition: 'all 0.2s',
-                  fontSize: 28,
+                  textTransform: 'none',
+                  borderBottom: location.pathname === item.path ? '3px solid #1976d2' : '3px solid transparent',
+                  pb: '6px',
+                  '&:hover': { color: '#f0f0f0' },
                 }}
               >
-                {item.icon}
-              </IconButton>
+                <Typography sx={{ display: { xs: 'none', md: 'block' } }}>{item.label}</Typography>
+              </Button>
             ))}
           </Box>
-          <IconButton sx={{ bgcolor: '#fff', color: '#1976d2', mt: 2 }}>
-            <SettingsIcon />
-          </IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={handleMenuOpen} sx={{ p: 0 }} aria-controls={menuOpen ? 'profile-menu' : undefined} aria-haspopup="true" aria-expanded={menuOpen ? 'true' : undefined}>
+              <Avatar sx={{ bgcolor: '#1976d2', width: 40, height: 40, fontWeight: 700 }}>R</Avatar>
+            </IconButton>
+            <Menu
+              id="profile-menu"
+              anchorEl={anchorEl}
+              open={menuOpen}
+              onClose={handleMenuClose}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              <MenuItem onClick={handleProfile}>
+                <ListItemIcon>
+                  <PersonIcon fontSize="small" />
+                </ListItemIcon>
+                Profile
+              </MenuItem>
+              <MenuItem onClick={handleSettingsNav}>
+                <ListItemIcon>
+                  <SettingsIcon fontSize="small" />
+                </ListItemIcon>
+                Settings
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={handleLogout}>
+                <ListItemIcon>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                Logout
+              </MenuItem>
+            </Menu>
+          </Box>
         </Box>
         {/* Main Content */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', pr: 2, ml: '112px' }}>
+  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', pr: 2, mt: '96px', px: 2 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2, mb: 3, ml: 1 }}>
             <Typography variant="h4" fontWeight={700} sx={{ letterSpacing: 1 }}>
               Personal Finance
             </Typography>
-            <Avatar sx={{ bgcolor: '#1976d2', width: 40, height: 40, fontWeight: 700 }}>R</Avatar>
           </Box>
           {/* Page Content */}
           <Box sx={{ flex: 1 }}>
@@ -98,7 +134,8 @@ const AppContent = () => {
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/accounts" element={<Accounts />} />
               <Route path="/budgets" element={<Budgets />} />
-              <Route path="/recurring" element={<RecurringPayments />} />
+              {/* Recurring route removed from navigation - component still exists if you want to enable later */}
+              {/* <Route path="/recurring" element={<RecurringPayments />} /> */}
               <Route path="/reports" element={<Reports />} />
               <Route path="/users" element={<Users />} />
               <Route path="/import-export" element={<ImportExport />} />
