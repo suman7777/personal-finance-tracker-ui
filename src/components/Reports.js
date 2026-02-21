@@ -4,7 +4,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, FormControl, InputLabel,
   Menu, IconButton, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 } from '@mui/material';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, ComposedChart, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import DownloadIcon from '@mui/icons-material/Download';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddIcon from '@mui/icons-material/Add';
@@ -97,7 +97,8 @@ const Reports = () => {
     return Object.entries(incomeExpenseData.monthlyBreakdown).map(([month, data]) => ({
       month,
       Income: data?.INCOME || 0,
-      Expense: data?.EXPENSE || 0
+      Expense: data?.EXPENSE || 0,
+      Profit: (data?.INCOME || 0) - (data?.EXPENSE || 0)
     }));
   };
 
@@ -228,9 +229,9 @@ const Reports = () => {
                   {/* Trend Chart */}
                   <Grid item xs={12}>
                     <Card sx={{ borderRadius: 2, p: 3, mt: 2 }}>
-                      <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Income vs Expense Trend</Typography>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Income and Expenses (Last 12 Months)</Typography>
                       <ResponsiveContainer width="100%" height={400}>
-                        <LineChart data={getIncomeExpenseChartData()}>
+                        <ComposedChart data={getIncomeExpenseChartData()}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                           <XAxis dataKey="month" stroke="#888" />
                           <YAxis stroke="#888" />
@@ -240,25 +241,20 @@ const Reports = () => {
                           />
                           <Legend 
                             wrapperStyle={{ paddingTop: '20px' }}
-                            iconType="line"
                           />
+                          <Bar dataKey="Income" fill="#1976d2" radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="Expense" fill="#81c0d8" radius={[8, 8, 0, 0]} />
                           <Line 
                             type="natural" 
-                            dataKey="Income" 
-                            stroke="#4caf50" 
+                            dataKey="Profit" 
+                            stroke="#e53935" 
                             strokeWidth={3}
-                            dot={{ fill: '#4caf50', r: 5 }}
+                            dot={{ fill: '#e53935', r: 5 }}
                             activeDot={{ r: 7 }}
+                            yAxisId="right"
                           />
-                          <Line 
-                            type="natural" 
-                            dataKey="Expense" 
-                            stroke="#f44336" 
-                            strokeWidth={3}
-                            dot={{ fill: '#f44336', r: 5 }}
-                            activeDot={{ r: 7 }}
-                          />
-                        </LineChart>
+                          <YAxis yAxisId="right" orientation="right" stroke="#e53935" />
+                        </ComposedChart>
                       </ResponsiveContainer>
                     </Card>
                   </Grid>
