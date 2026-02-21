@@ -225,19 +225,39 @@ const Reports = () => {
                     </Card>
                   </Grid>
 
-                  {/* Chart */}
+                  {/* Trend Chart */}
                   <Grid item xs={12}>
                     <Card sx={{ borderRadius: 2, p: 3, mt: 2 }}>
-                      <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Monthly Breakdown</Typography>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Income vs Expense Trend</Typography>
                       <ResponsiveContainer width="100%" height={400}>
                         <LineChart data={getIncomeExpenseChartData()}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip formatter={(value) => formatINR(value)} />
-                          <Legend />
-                          <Line type="monotone" dataKey="Income" stroke="#4caf50" strokeWidth={2} />
-                          <Line type="monotone" dataKey="Expense" stroke="#f44336" strokeWidth={2} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis dataKey="month" stroke="#888" />
+                          <YAxis stroke="#888" />
+                          <Tooltip 
+                            formatter={(value) => formatINR(value)}
+                            contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
+                          />
+                          <Legend 
+                            wrapperStyle={{ paddingTop: '20px' }}
+                            iconType="line"
+                          />
+                          <Line 
+                            type="natural" 
+                            dataKey="Income" 
+                            stroke="#4caf50" 
+                            strokeWidth={3}
+                            dot={{ fill: '#4caf50', r: 5 }}
+                            activeDot={{ r: 7 }}
+                          />
+                          <Line 
+                            type="natural" 
+                            dataKey="Expense" 
+                            stroke="#f44336" 
+                            strokeWidth={3}
+                            dot={{ fill: '#f44336', r: 5 }}
+                            activeDot={{ r: 7 }}
+                          />
                         </LineChart>
                       </ResponsiveContainer>
                     </Card>
