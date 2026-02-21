@@ -5,7 +5,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Dashboard from './components/Dashboard';
@@ -17,7 +16,6 @@ import Reports from './components/Reports';
 import Accounts from './components/Accounts';
 // RecurringPayments route has been commented out; keep import commented to avoid unused import warnings
 // import RecurringPayments from './components/RecurringPayments';
-import ImportExport from './components/ImportExport';
 import Settings from './components/Settings';
 import Auth from './components/Auth';
 import Users from './components/Users';
@@ -31,7 +29,6 @@ const sidebarNav = [
   // { label: 'Recurring', path: '/recurring', icon: <PaymentIcon /> },
   { label: 'Reports', path: '/reports', icon: <BarChartIcon /> },
   { label: 'Users', path: '/users', icon: <PersonIcon /> },
-  { label: 'Import/Export', path: '/import-export', icon: <CloudUploadIcon /> },
 ];
 
 const AppContent = () => {
@@ -130,7 +127,6 @@ const AppContent = () => {
               {/* <Route path="/recurring" element={<RecurringPayments />} /> */}
               <Route path="/reports" element={<Reports />} />
               <Route path="/users" element={<Users />} />
-              <Route path="/import-export" element={<ImportExport />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/auth" element={<Auth />} />
             </Routes>
