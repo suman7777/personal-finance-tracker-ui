@@ -127,44 +127,34 @@ const Reports = () => {
 
   return (
     <Box sx={{ p: 4, bgcolor: '#f6f6f2', minHeight: '100vh' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" fontWeight={900} sx={{ letterSpacing: 1 }}>Reports</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={fetchAnalysisReports} sx={{ borderRadius: 2 }}>
-          Generate Report
-        </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+          <TextField
+            label="Start Date"
+            type="date"
+            value={dateRange.startDate}
+            onChange={(e) => handleDateChange('startDate', e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+            sx={{ width: 180 }}
+          />
+          <TextField
+            label="End Date"
+            type="date"
+            value={dateRange.endDate}
+            onChange={(e) => handleDateChange('endDate', e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+            sx={{ width: 180 }}
+          />
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Typography variant="h4" fontWeight={900} sx={{ letterSpacing: 1 }}>Reports</Typography>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={fetchAnalysisReports} sx={{ borderRadius: 2 }}>
+            Generate Report
+          </Button>
+        </Box>
       </Box>
-
-      {/* Date Range Selector */}
-      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>
-        <CardContent>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-            <TextField
-              label="Start Date"
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) => handleDateChange('startDate', e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              size="small"
-            />
-            <TextField
-              label="End Date"
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) => handleDateChange('endDate', e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              size="small"
-            />
-            <Button
-              variant="contained"
-              startIcon={<RefreshIcon />}
-              onClick={handleRefreshAnalysis}
-              sx={{ borderRadius: 2 }}
-            >
-              Refresh
-            </Button>
-          </Stack>
-        </CardContent>
-      </Card>
 
       {/* Report Tabs */}
       <Box sx={{ bgcolor: '#fff', borderRadius: 3, boxShadow: 2, mb: 3 }}>
