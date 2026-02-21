@@ -307,7 +307,7 @@ const Reports = () => {
                     <Card sx={{ borderRadius: 2, p: 2 }}>
                       <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Budget vs Actual Comparison</Typography>
                       <ResponsiveContainer width="100%" height={400}>
-                        <BarChart data={budgetData.budgetAnalysis}>
+                        <BarChart data={Array.isArray(budgetData) ? budgetData : budgetData.budgetAnalysis || []}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="category" />
                           <YAxis />
@@ -334,7 +334,7 @@ const Reports = () => {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {budgetData.budgetAnalysis.map((row, i) => (
+                            {(Array.isArray(budgetData) ? budgetData : budgetData.budgetAnalysis || []).map((row, i) => (
                               <TableRow key={i} sx={{
                                 bgcolor: row.status === 'Over Budget' ? '#ffebee' : '#e8f5e9'
                               }}>
