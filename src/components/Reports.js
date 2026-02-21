@@ -194,7 +194,7 @@ const Reports = () => {
               <Box sx={{ p: 3 }}>
                 <Grid container spacing={3}>
                   {/* Summary Cards */}
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={6} md={4}>
                     <Card sx={{ borderRadius: 2, bgcolor: '#e8f5e9' }}>
                       <CardContent>
                         <Typography color="textSecondary" gutterBottom>Total Income</Typography>
@@ -204,7 +204,7 @@ const Reports = () => {
                       </CardContent>
                     </Card>
                   </Grid>
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={6} md={4}>
                     <Card sx={{ borderRadius: 2, bgcolor: '#ffebee' }}>
                       <CardContent>
                         <Typography color="textSecondary" gutterBottom>Total Expense</Typography>
@@ -214,7 +214,7 @@ const Reports = () => {
                       </CardContent>
                     </Card>
                   </Grid>
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={6} md={4}>
                     <Card sx={{ borderRadius: 2, bgcolor: '#e3f2fd' }}>
                       <CardContent>
                         <Typography color="textSecondary" gutterBottom>Net Balance</Typography>
@@ -227,8 +227,8 @@ const Reports = () => {
 
                   {/* Chart */}
                   <Grid item xs={12}>
-                    <Card sx={{ borderRadius: 2, p: 2 }}>
-                      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Monthly Breakdown</Typography>
+                    <Card sx={{ borderRadius: 2, p: 3, mt: 2 }}>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Monthly Breakdown</Typography>
                       <ResponsiveContainer width="100%" height={400}>
                         <LineChart data={getIncomeExpenseChartData()}>
                           <CartesianGrid strokeDasharray="3 3" />
