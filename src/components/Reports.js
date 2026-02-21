@@ -193,7 +193,8 @@ const Reports = () => {
             {/* Income vs Expense */}
             {activeTab === 0 && incomeExpenseData && Object.keys(incomeExpenseData).length > 0 && (
               <Box sx={{ p: 3 }}>
-                <Grid container spacing={3}>
+                {/* Summary Cards Row */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
                   {/* Summary Cards */}
                   <Grid item xs={12} sm={6} md={4}>
                     <Card sx={{ borderRadius: 2, bgcolor: '#e8f5e9' }}>
@@ -225,40 +226,38 @@ const Reports = () => {
                       </CardContent>
                     </Card>
                   </Grid>
-
-                  {/* Trend Chart */}
-                  <Grid item xs={12} sx={{ mt: 4 }}>
-                    <Card sx={{ borderRadius: 2, p: 3 }}>
-                      <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Income and Expenses (Last 12 Months)</Typography>
-                      <ResponsiveContainer width="100%" height={400}>
-                        <ComposedChart data={getIncomeExpenseChartData()}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis dataKey="month" stroke="#888" />
-                          <YAxis stroke="#888" />
-                          <Tooltip 
-                            formatter={(value) => formatINR(value)}
-                            contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
-                          />
-                          <Legend 
-                            wrapperStyle={{ paddingTop: '20px' }}
-                          />
-                          <Bar dataKey="Income" fill="#1976d2" radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="Expense" fill="#81c0d8" radius={[8, 8, 0, 0]} />
-                          <Line 
-                            type="natural" 
-                            dataKey="Profit" 
-                            stroke="#e53935" 
-                            strokeWidth={3}
-                            dot={{ fill: '#e53935', r: 5 }}
-                            activeDot={{ r: 7 }}
-                            yAxisId="right"
-                          />
-                          <YAxis yAxisId="right" orientation="right" stroke="#e53935" />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    </Card>
-                  </Grid>
                 </Grid>
+
+                {/* Trend Chart Row */}
+                <Card sx={{ borderRadius: 2, p: 3 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Income and Expenses (Last 12 Months)</Typography>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <ComposedChart data={getIncomeExpenseChartData()}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                      <XAxis dataKey="month" stroke="#888" />
+                      <YAxis stroke="#888" />
+                      <Tooltip 
+                        formatter={(value) => formatINR(value)}
+                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                      />
+                      <Bar dataKey="Income" fill="#1976d2" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="Expense" fill="#81c0d8" radius={[8, 8, 0, 0]} />
+                      <Line 
+                        type="natural" 
+                        dataKey="Profit" 
+                        stroke="#e53935" 
+                        strokeWidth={3}
+                        dot={{ fill: '#e53935', r: 5 }}
+                        activeDot={{ r: 7 }}
+                        yAxisId="right"
+                      />
+                      <YAxis yAxisId="right" orientation="right" stroke="#e53935" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </Card>
               </Box>
             )}
 
