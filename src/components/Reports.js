@@ -128,7 +128,7 @@ const Reports = () => {
     <Box sx={{ p: 4, bgcolor: '#f6f6f2', minHeight: '100vh' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight={900} sx={{ letterSpacing: 1 }}>Reports</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} sx={{ borderRadius: 2 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={fetchAnalysisReports} sx={{ borderRadius: 2 }}>
           Generate Report
         </Button>
       </Box>
