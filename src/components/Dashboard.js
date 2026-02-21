@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  Box, Grid, Typography, Divider, TextField, InputAdornment,
+  Box, Grid, Typography, Divider, TextField, InputAdornment, Select, MenuItem, FormControl, InputLabel,
   List, ListItem, ListItemAvatar, ListItemText, LinearProgress, CircularProgress,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Avatar, Paper
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Avatar, Paper, Button, Collapse
 } from '@mui/material';
 
 import { Line } from 'react-chartjs-2';
@@ -25,6 +25,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import SavingsIcon from '@mui/icons-material/Savings';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 // Register Chart.js components
 ChartJS.register(
@@ -44,6 +46,17 @@ const Dashboard = () => {
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [txLoading, setTxLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    category: '',
+    type: '',
+    description: '',
+    notes: '',
+    startDate: '',
+    endDate: '',
+    minAmount: '',
+    maxAmount: ''
+  });
   const searchTimeoutRef = useRef(null);
   // removed chartTab/Tabs — we show two charts side-by-side for a clean overview
 
@@ -88,7 +101,19 @@ const Dashboard = () => {
       try {
         const backendBase = 'http://localhost:8080';
         const url = new URL('/api/transactions/search', backendBase);
-        if (searchQuery) url.searchParams.set('q', searchQuery);
+        
+        // Add search query if provided
+        if (searchQuery) url.searchParams.set('description', searchQuery);
+        
+        // Add all filters
+        if (filters.category) url.searchParams.set('category', filters.category);
+        if (filters.type) url.searchParams.set('type', filters.type);
+        if (filters.notes) url.searchParams.set('notes', filters.notes);
+        if (filters.startDate) url.searchParams.set('startDate', filters.startDate);
+        if (filters.endDate) url.searchParams.set('endDate', filters.endDate);
+        if (filters.minAmount) url.searchParams.set('minAmount', filters.minAmount);
+        if (filters.maxAmount) url.searchParams.set('maxAmount', filters.maxAmount);
+        
         fetch(url.toString(), { method: 'GET', credentials: 'include' })
           .then(res => {
             if (!res.ok) throw new Error('Search failed');
@@ -108,7 +133,7 @@ const Dashboard = () => {
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
-  }, [searchQuery]);
+  }, [searchQuery, filters]);
 
   const totalSavings = totalIncome - totalExpense;
 
@@ -277,11 +302,22 @@ const Dashboard = () => {
 
       {/* Transactions */}
       <Box sx={{ mb: 4, p: 3, borderRadius: 4, border: '1px solid #e5e7eb', bgcolor: '#fff' }}>
-        <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>💰 Recent Transactions</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6" fontWeight={700}>💰 Recent Transactions</Typography>
+          <Button
+            size="small"
+            onClick={() => setShowFilters(!showFilters)}
+            endIcon={showFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            sx={{ textTransform: 'none' }}
+          >
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </Button>
+        </Box>
+        
         <TextField
           size="small"
           fullWidth
-          placeholder="Search transactions"
+          placeholder="Search by description or notes"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
@@ -299,23 +335,134 @@ const Dashboard = () => {
           }}
           sx={{ mb: 2 }}
         />
+        
+        {/* Filter Panel */}
+        <Collapse in={showFilters}>
+          <Box sx={{ mb: 3, p: 2, bgcolor: '#f9fafb', borderRadius: 2, border: '1px solid #e5e7eb' }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  label="Category"
+                  size="small"
+                  fullWidth
+                  value={filters.category}
+                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                  placeholder="e.g., Groceries"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Type</InputLabel>
+                  <Select
+                    value={filters.type}
+                    label="Type"
+                    onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    <MenuItem value="Income">Income</MenuItem>
+                    <MenuItem value="Expense">Expense</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  label="Notes"
+                  size="small"
+                  fullWidth
+                  value={filters.notes}
+                  onChange={(e) => setFilters({ ...filters, notes: e.target.value })}
+                  placeholder="Search notes"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  label="Start Date"
+                  type="date"
+                  size="small"
+                  fullWidth
+                  value={filters.startDate}
+                  onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  label="End Date"
+                  type="date"
+                  size="small"
+                  fullWidth
+                  value={filters.endDate}
+                  onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  label="Min Amount"
+                  type="number"
+                  size="small"
+                  fullWidth
+                  value={filters.minAmount}
+                  onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                  placeholder="0"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  label="Max Amount"
+                  type="number"
+                  size="small"
+                  fullWidth
+                  value={filters.maxAmount}
+                  onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                  placeholder="999999"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setFilters({
+                    category: '', type: '', description: '', notes: '',
+                    startDate: '', endDate: '', minAmount: '', maxAmount: ''
+                  })}
+                >
+                  Clear Filters
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
+        </Collapse>
+        
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell>Date</TableCell>
                 <TableCell>Category</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Description</TableCell>
                 <TableCell align="right">Amount</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {transactions.map((row, i) => (
-                <TableRow key={i} sx={{ '&:hover': { bgcolor: '#f9fafb' } }}>
-                  <TableCell>{row.date}</TableCell>
-                  <TableCell>{row.category}</TableCell>
-                  <TableCell align="right">{formatINR(row.amount)}</TableCell>
+              {transactions.length > 0 ? (
+                transactions.map((row, i) => (
+                  <TableRow key={i} sx={{ '&:hover': { bgcolor: '#f9fafb' } }}>
+                    <TableCell>{row.date}</TableCell>
+                    <TableCell>{row.category}</TableCell>
+                    <TableCell>{row.type}</TableCell>
+                    <TableCell>{row.description || row.notes || '—'}</TableCell>
+                    <TableCell align="right">{formatINR(row.amount)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3, color: '#999' }}>
+                    No transactions found
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>
