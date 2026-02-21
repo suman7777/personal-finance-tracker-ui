@@ -57,16 +57,20 @@ const Reports = () => {
       const params = `?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
       
       const [incomeExp, category, budget, summary] = await Promise.all([
-        fetch(`http://localhost:8080/api/reports/analysis/income-expense${params}`).then(r => r.json()),
-        fetch(`http://localhost:8080/api/reports/analysis/category-wise${params}`).then(r => r.json()),
-        fetch(`http://localhost:8080/api/reports/analysis/budget-vs-actual${params}`).then(r => r.json()),
-        fetch(`http://localhost:8080/api/reports/analysis/summary${params}`).then(r => r.json())
+        fetch(`http://localhost:8080/api/reports/analysis/income-expense${params}`)
+          .then(r => r.ok ? r.json() : null),
+        fetch(`http://localhost:8080/api/reports/analysis/category-wise${params}`)
+          .then(r => r.ok ? r.json() : null),
+        fetch(`http://localhost:8080/api/reports/analysis/budget-vs-actual${params}`)
+          .then(r => r.ok ? r.json() : null),
+        fetch(`http://localhost:8080/api/reports/analysis/summary${params}`)
+          .then(r => r.ok ? r.json() : null)
       ]);
       
-      setIncomeExpenseData(incomeExp);
-      setCategoryData(category);
-      setBudgetData(budget);
-      setSummaryData(summary);
+      setIncomeExpenseData(incomeExp || {});
+      setCategoryData(category || {});
+      setBudgetData(budget || []);
+      setSummaryData(summary || {});
     } catch (err) {
       console.error('Error fetching analysis:', err);
       setError('Failed to load analysis reports');
@@ -89,21 +93,21 @@ const Reports = () => {
 
   // Convert monthly breakdown to chart data
   const getIncomeExpenseChartData = () => {
-    if (!incomeExpenseData?.monthlyBreakdown) return [];
+    if (!incomeExpenseData?.monthlyBreakdown || typeof incomeExpenseData.monthlyBreakdown !== 'object') return [];
     return Object.entries(incomeExpenseData.monthlyBreakdown).map(([month, data]) => ({
       month,
-      Income: data.INCOME || 0,
-      Expense: data.EXPENSE || 0
+      Income: data?.INCOME || 0,
+      Expense: data?.EXPENSE || 0
     }));
   };
 
   // Convert category data to pie chart format
   const getCategoryChartData = () => {
-    if (!categoryData?.categoryExpenses) return [];
+    if (!categoryData?.categoryExpenses || typeof categoryData.categoryExpenses !== 'object') return [];
     return Object.entries(categoryData.categoryExpenses).map(([name, value]) => ({
       name,
       value,
-      percentage: categoryData.categoryPercentage[name]
+      percentage: categoryData?.categoryPercentage?.[name] || 0
     }));
   };
 
@@ -186,7 +190,7 @@ const Reports = () => {
         {!analysisLoading && (
           <>
             {/* Income vs Expense */}
-            {activeTab === 0 && incomeExpenseData && (
+            {activeTab === 0 && incomeExpenseData && Object.keys(incomeExpenseData).length > 0 && (
               <Box sx={{ p: 3 }}>
                 <Grid container spacing={3}>
                   {/* Summary Cards */}
@@ -195,7 +199,7 @@ const Reports = () => {
                       <CardContent>
                         <Typography color="textSecondary" gutterBottom>Total Income</Typography>
                         <Typography variant="h5" sx={{ color: '#4caf50', fontWeight: 700 }}>
-                          {formatINR(incomeExpenseData.totalIncome)}
+                          {formatINR(incomeExpenseData?.totalIncome || 0)}
                         </Typography>
                       </CardContent>
                     </Card>
@@ -205,7 +209,7 @@ const Reports = () => {
                       <CardContent>
                         <Typography color="textSecondary" gutterBottom>Total Expense</Typography>
                         <Typography variant="h5" sx={{ color: '#f44336', fontWeight: 700 }}>
-                          {formatINR(incomeExpenseData.totalExpense)}
+                          {formatINR(incomeExpenseData?.totalExpense || 0)}
                         </Typography>
                       </CardContent>
                     </Card>
@@ -215,7 +219,7 @@ const Reports = () => {
                       <CardContent>
                         <Typography color="textSecondary" gutterBottom>Net Balance</Typography>
                         <Typography variant="h5" sx={{ color: '#2196f3', fontWeight: 700 }}>
-                          {formatINR(incomeExpenseData.netBalance)}
+                          {formatINR(incomeExpenseData?.netBalance || 0)}
                         </Typography>
                       </CardContent>
                     </Card>
@@ -243,7 +247,7 @@ const Reports = () => {
             )}
 
             {/* Category Breakdown */}
-            {activeTab === 1 && categoryData && (
+            {activeTab === 1 && categoryData && Object.keys(categoryData).length > 0 && (
               <Box sx={{ p: 3 }}>
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
@@ -370,7 +374,7 @@ const Reports = () => {
             )}
 
             {/* Financial Summary */}
-            {activeTab === 3 && summaryData && (
+            {activeTab === 3 && summaryData && Object.keys(summaryData).length > 0 && (
               <Box sx={{ p: 3 }}>
                 <Grid container spacing={3}>
                   {/* Summary Cards */}
@@ -378,7 +382,7 @@ const Reports = () => {
                     <Card sx={{ borderRadius: 2, bgcolor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff' }}>
                       <CardContent>
                         <Typography variant="body2" sx={{ opacity: 0.9 }}>Total Income</Typography>
-                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData.totalIncome)}</Typography>
+                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData?.totalIncome || 0)}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -386,7 +390,7 @@ const Reports = () => {
                     <Card sx={{ borderRadius: 2, bgcolor: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#fff' }}>
                       <CardContent>
                         <Typography variant="body2" sx={{ opacity: 0.9 }}>Total Expense</Typography>
-                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData.totalExpense)}</Typography>
+                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData?.totalExpense || 0)}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -394,7 +398,7 @@ const Reports = () => {
                     <Card sx={{ borderRadius: 2, bgcolor: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: '#fff' }}>
                       <CardContent>
                         <Typography variant="body2" sx={{ opacity: 0.9 }}>Net Balance</Typography>
-                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData.netBalance)}</Typography>
+                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData?.netBalance || 0)}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -404,7 +408,7 @@ const Reports = () => {
                     <Card sx={{ borderRadius: 2 }}>
                       <CardContent>
                         <Typography variant="body2" color="textSecondary">Transaction Count</Typography>
-                        <Typography variant="h5" fontWeight={700}>{summaryData.transactionCount}</Typography>
+                        <Typography variant="h5" fontWeight={700}>{summaryData?.transactionCount || 0}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -412,7 +416,7 @@ const Reports = () => {
                     <Card sx={{ borderRadius: 2 }}>
                       <CardContent>
                         <Typography variant="body2" color="textSecondary">Avg Transaction Amount</Typography>
-                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData.averageTransactionAmount)}</Typography>
+                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData?.averageTransactionAmount || 0)}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -420,7 +424,7 @@ const Reports = () => {
                     <Card sx={{ borderRadius: 2 }}>
                       <CardContent>
                         <Typography variant="body2" color="textSecondary">Date Range</Typography>
-                        <Typography variant="h6" fontWeight={700}>{summaryData.startDate} to {summaryData.endDate}</Typography>
+                        <Typography variant="h6" fontWeight={700}>{summaryData?.startDate} to {summaryData?.endDate}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -438,7 +442,7 @@ const Reports = () => {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {Object.entries(summaryData.topExpenseCategories).map(([category, amount], i) => (
+                            {summaryData?.topExpenseCategories && Object.entries(summaryData.topExpenseCategories).map(([category, amount], i) => (
                               <TableRow key={i}>
                                 <TableCell>{category}</TableCell>
                                 <TableCell align="right">{formatINR(amount)}</TableCell>
