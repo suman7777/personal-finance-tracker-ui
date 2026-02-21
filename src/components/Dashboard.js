@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Box, Grid, Typography, Divider, TextField, InputAdornment,
   List, ListItem, ListItemAvatar, ListItemText, LinearProgress, CircularProgress,
@@ -42,6 +42,9 @@ const Dashboard = () => {
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalExpense, setTotalExpense] = useState(0);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [txLoading, setTxLoading] = useState(false);
+  const searchTimeoutRef = useRef(null);
   // removed chartTab/Tabs — we show two charts side-by-side for a clean overview
 
   // Helper: format numbers as Indian Rupees
@@ -75,6 +78,37 @@ const Dashboard = () => {
         setLoadingDashboard(false);
       });
   }, []);
+
+  // Search transactions via backend endpoint (debounced)
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    // debounce user input
+    searchTimeoutRef.current = setTimeout(() => {
+      setTxLoading(true);
+      try {
+        const backendBase = 'http://localhost:8080';
+        const url = new URL('/api/transactions/search', backendBase);
+        if (searchQuery) url.searchParams.set('q', searchQuery);
+        fetch(url.toString(), { method: 'GET', credentials: 'include' })
+          .then(res => {
+            if (!res.ok) throw new Error('Search failed');
+            return res.json();
+          })
+          .then(data => setTransactions(data || []))
+          .catch(err => {
+            console.error('Transaction search error:', err);
+          })
+          .finally(() => setTxLoading(false));
+      } catch (err) {
+        console.error('Transaction search error:', err);
+        setTxLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchQuery]);
 
   const totalSavings = totalIncome - totalExpense;
 
@@ -248,10 +282,17 @@ const Dashboard = () => {
           size="small"
           fullWidth
           placeholder="Search transactions"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                {txLoading && <CircularProgress size={18} />}
               </InputAdornment>
             ),
             sx: { borderRadius: 3, bgcolor: '#f9fafb' },

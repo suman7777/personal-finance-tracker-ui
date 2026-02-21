@@ -5,7 +5,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import SettingsIcon from '@mui/icons-material/Settings';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -33,7 +32,6 @@ const sidebarNav = [
   { label: 'Reports', path: '/reports', icon: <BarChartIcon /> },
   { label: 'Users', path: '/users', icon: <PersonIcon /> },
   { label: 'Import/Export', path: '/import-export', icon: <CloudUploadIcon /> },
-  { label: 'Settings', path: '/settings', icon: <SettingsIcon /> },
 ];
 
 const AppContent = () => {
@@ -102,12 +100,6 @@ const AppContent = () => {
                   <PersonIcon fontSize="small" />
                 </ListItemIcon>
                 Profile
-              </MenuItem>
-              <MenuItem onClick={handleSettingsNav}>
-                <ListItemIcon>
-                  <SettingsIcon fontSize="small" />
-                </ListItemIcon>
-                Settings
               </MenuItem>
               <Divider />
               <MenuItem onClick={handleLogout}>
