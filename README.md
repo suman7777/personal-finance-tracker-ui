@@ -133,14 +133,3 @@ git checkout -b feat/your-feature
 If you'd like, I can open a PR for the recent UI work and add reviewers.
 
 ---
-
-## Contact / Next steps
-
-If you want any of the following, tell me which and I'll implement it:
-
-- Add actual logout behavior (clear tokens and call backend logout)
-- Show user name/email in the profile menu and use a user avatar image
-- Re-enable or remove the Recurring module (it's currently commented out in the nav)
-- Add a dark-mode toggle wired to `darkMode` in `src/App.js`
-
-Thank you — happy to help keep improving the UI and complete any backend wiring you need.
