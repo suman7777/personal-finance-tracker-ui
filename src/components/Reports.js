@@ -227,8 +227,8 @@ const Reports = () => {
                   </Grid>
 
                   {/* Trend Chart */}
-                  <Grid item xs={12}>
-                    <Card sx={{ borderRadius: 2, p: 3, mt: 2 }}>
+                  <Grid item xs={12} sx={{ mt: 4 }}>
+                    <Card sx={{ borderRadius: 2, p: 3 }}>
                       <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Income and Expenses (Last 12 Months)</Typography>
                       <ResponsiveContainer width="100%" height={400}>
                         <ComposedChart data={getIncomeExpenseChartData()}>
