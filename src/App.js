@@ -110,12 +110,6 @@ const AppContent = () => {
         </Box>
         {/* Main Content */}
   <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', pr: 2, mt: '96px', px: 2 }}>
-          {/* Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2, mb: 3, ml: 1 }}>
-            <Typography variant="h4" fontWeight={700} sx={{ letterSpacing: 1 }}>
-              Personal Finance
-            </Typography>
-          </Box>
           {/* Page Content */}
           <Box sx={{ flex: 1 }}>
             <Routes>
