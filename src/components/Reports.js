@@ -2,31 +2,35 @@ import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, Button, Stack, CircularProgress, Alert,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, FormControl, InputLabel,
-  Menu, IconButton
+  Menu, IconButton, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 } from '@mui/material';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import DownloadIcon from '@mui/icons-material/Download';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedReportId, setSelectedReportId] = useState(null);
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    type: 'Summary',
-    category: '',
-    startDate: '',
-    endDate: ''
+  const [activeTab, setActiveTab] = useState(0);
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
   });
+  
+  // Analysis data states
+  const [incomeExpenseData, setIncomeExpenseData] = useState(null);
+  const [categoryData, setCategoryData] = useState(null);
+  const [budgetData, setBudgetData] = useState(null);
+  const [summaryData, setSummaryData] = useState(null);
+  const [recentReports, setRecentReports] = useState([]);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C'];
 
   // Fetch reports
   const fetchReports = () => {
@@ -46,311 +50,443 @@ const Reports = () => {
       });
   };
 
+  // Fetch analysis reports
+  const fetchAnalysisReports = async () => {
+    setAnalysisLoading(true);
+    try {
+      const params = `?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
+      
+      const [incomeExp, category, budget, summary] = await Promise.all([
+        fetch(`http://localhost:8080/api/reports/analysis/income-expense${params}`).then(r => r.json()),
+        fetch(`http://localhost:8080/api/reports/analysis/category-wise${params}`).then(r => r.json()),
+        fetch(`http://localhost:8080/api/reports/analysis/budget-vs-actual${params}`).then(r => r.json()),
+        fetch(`http://localhost:8080/api/reports/analysis/summary${params}`).then(r => r.json())
+      ]);
+      
+      setIncomeExpenseData(incomeExp);
+      setCategoryData(category);
+      setBudgetData(budget);
+      setSummaryData(summary);
+    } catch (err) {
+      console.error('Error fetching analysis:', err);
+      setError('Failed to load analysis reports');
+    }
+    setAnalysisLoading(false);
+  };
+
+  // Fetch recent reports
+  const fetchRecentReports = () => {
+    fetch('http://localhost:8080/api/reports/recent?limit=10')
+      .then(res => res.json())
+      .then(data => setRecentReports(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Error fetching recent reports:', err));
+  };
+
   useEffect(() => {
     fetchReports();
+    fetchRecentReports();
   }, []);
 
-  // Handle create/update report
-  const handleSaveReport = () => {
-    if (!formData.name.trim()) {
-      alert('Please enter report name');
-      return;
-    }
-
-    const method = editingId ? 'PUT' : 'POST';
-    const url = editingId 
-      ? `http://localhost:8080/api/reports/${editingId}`
-      : 'http://localhost:8080/api/reports';
-
-    const payload = {
-      ...formData,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to save report');
-        return res.json();
-      })
-      .then(() => {
-        setOpenDialog(false);
-        resetForm();
-        fetchReports();
-      })
-      .catch(err => {
-        console.error('Error saving report:', err);
-        alert('Error saving report');
-      });
+  // Convert monthly breakdown to chart data
+  const getIncomeExpenseChartData = () => {
+    if (!incomeExpenseData?.monthlyBreakdown) return [];
+    return Object.entries(incomeExpenseData.monthlyBreakdown).map(([month, data]) => ({
+      month,
+      Income: data.INCOME || 0,
+      Expense: data.EXPENSE || 0
+    }));
   };
 
-  // Handle delete report
-  const handleDeleteReport = (id) => {
-    if (!window.confirm('Are you sure you want to delete this report?')) return;
-
-    fetch(`http://localhost:8080/api/reports/${id}`, { method: 'DELETE' })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to delete report');
-        fetchReports();
-        handleMenuClose();
-      })
-      .catch(err => {
-        console.error('Error deleting report:', err);
-        alert('Error deleting report');
-      });
+  // Convert category data to pie chart format
+  const getCategoryChartData = () => {
+    if (!categoryData?.categoryExpenses) return [];
+    return Object.entries(categoryData.categoryExpenses).map(([name, value]) => ({
+      name,
+      value,
+      percentage: categoryData.categoryPercentage[name]
+    }));
   };
 
-  // Handle export report
-  const handleExportReport = (report) => {
-    // Build query params from report filters
-    const params = new URLSearchParams();
-    if (report.category) params.append('category', report.category);
-    if (report.startDate) params.append('startDate', report.startDate);
-    if (report.endDate) params.append('endDate', report.endDate);
-
-    fetch(`http://localhost:8080/api/transactions/search?${params}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch transaction data');
-        return res.json();
-      })
-      .then(transactions => {
-        exportToCSV(report, transactions);
-      })
-      .catch(err => {
-        console.error('Error exporting report:', err);
-        alert('Error exporting report');
-      });
+  const handleDateChange = (field, value) => {
+    setDateRange({ ...dateRange, [field]: value });
   };
 
-  // Export to CSV
-  const exportToCSV = (report, transactions) => {
-    let csv = `Report: ${report.name}\n`;
-    csv += `Generated: ${new Date().toLocaleString()}\n`;
-    csv += `Type: ${report.type}\n`;
-    if (report.description) csv += `Description: ${report.description}\n`;
-    csv += '\n\nTransactions\n';
-    csv += 'Date,Category,Type,Description,Amount,Notes\n';
-
-    transactions.forEach(tx => {
-      csv += `"${tx.date}","${tx.category}","${tx.type}","${tx.description || ''}",${tx.amount},"${tx.notes || ''}"\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${report.name.replace(/\s+/g, '_')}_${new Date().getTime()}.csv`;
-    link.click();
+  const handleRefreshAnalysis = () => {
+    fetchAnalysisReports();
   };
 
-  // Open dialog for create/edit
-  const openCreateDialog = () => {
-    resetForm();
-    setEditingId(null);
-    setOpenDialog(true);
-  };
-
-  const openEditDialog = (report) => {
-    setFormData({
-      name: report.name || '',
-      description: report.description || '',
-      type: report.type || 'Summary',
-      category: report.category || '',
-      startDate: report.startDate || '',
-      endDate: report.endDate || ''
-    });
-    setEditingId(report.id);
-    setOpenDialog(true);
-    handleMenuClose();
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      type: 'Summary',
-      category: '',
-      startDate: '',
-      endDate: ''
-    });
-  };
-
-  const handleMenuOpen = (e, reportId) => {
-    setAnchorEl(e.currentTarget);
-    setSelectedReportId(reportId);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedReportId(null);
+  const formatINR = (val) => {
+    const n = Number(val || 0);
+    return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   return (
     <Box sx={{ p: 4, bgcolor: '#f6f6f2', minHeight: '100vh' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight={900} sx={{ letterSpacing: 1 }}>Reports</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateDialog} sx={{ borderRadius: 2 }}>
-          Create Report
+        <Button variant="contained" startIcon={<AddIcon />} sx={{ borderRadius: 2 }}>
+          Generate Report
         </Button>
       </Box>
-      
-      {loading && <CircularProgress />}
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      
-      {reports.length === 0 && !loading && (
-        <Alert severity="info">No reports yet. Create one to get started!</Alert>
-      )}
-      
-      <Grid container spacing={3}>
-        {reports.map((report) => (
-          <Grid item xs={12} md={6} lg={4} key={report.id}>
-            <Card sx={{ borderRadius: 3, boxShadow: 2, position: 'relative', overflow: 'visible', height: '100%', display: 'flex', flexDirection: 'column' }}>
-              {/* Accent bar */}
-              <Box sx={{ position: 'absolute', top: -8, left: 24, width: 40, height: 6, bgcolor: 'info.main', borderRadius: 2 }} />
-              <CardContent sx={{ flex: 1 }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 2 }}>
-                  <Typography variant="h6" fontWeight={700} sx={{ mr: 1 }}>{report.name}</Typography>
-                  <IconButton size="small" onClick={(e) => handleMenuOpen(e, report.id)}>
-                    <MoreVertIcon sx={{ fontSize: 20 }} />
-                  </IconButton>
-                </Stack>
-                {report.description && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {report.description}
-                  </Typography>
-                )}
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                  Type: <strong>{report.type}</strong>
-                </Typography>
-                {report.category && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                    Category: <strong>{report.category}</strong>
-                  </Typography>
-                )}
-                {report.startDate && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                    Date Range: <strong>{report.startDate} to {report.endDate || 'Today'}</strong>
-                  </Typography>
-                )}
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  Created: {report.date}
-                </Typography>
-              </CardContent>
-              <Stack direction="row" spacing={1} sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
-                <Button 
-                  variant="contained" 
-                  size="small" 
-                  startIcon={<DownloadIcon />} 
-                  fullWidth
-                  onClick={() => handleExportReport(report)}
-                  sx={{ borderRadius: 2 }}
-                >
-                  Export
-                </Button>
-              </Stack>
-            </Card>
-          </Grid>
-        ))}
-        
-        <Grid item xs={12} md={6} lg={4}>
-          <Card sx={{ borderRadius: 3, boxShadow: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'visible', minHeight: 250 }}>
-            <Box sx={{ position: 'absolute', top: -8, left: 24, width: 40, height: 6, bgcolor: 'info.main', borderRadius: 2 }} />
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreateDialog} sx={{ borderRadius: 2, fontWeight: 700 }}>
-              Create New Report
-            </Button>
-          </Card>
-        </Grid>
-      </Grid>
 
-      {/* Create/Edit Report Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingId ? 'Edit Report' : 'Create New Report'}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <TextField
-            fullWidth
-            label="Report Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            margin="normal"
-            multiline
-            rows={2}
-          />
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Report Type</InputLabel>
-            <Select
-              value={formData.type}
-              label="Report Type"
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+      {/* Date Range Selector */}
+      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>
+        <CardContent>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+            <TextField
+              label="Start Date"
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => handleDateChange('startDate', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+            />
+            <TextField
+              label="End Date"
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => handleDateChange('endDate', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+            />
+            <Button
+              variant="contained"
+              startIcon={<RefreshIcon />}
+              onClick={handleRefreshAnalysis}
+              sx={{ borderRadius: 2 }}
             >
-              <MenuItem value="Summary">Summary</MenuItem>
-              <MenuItem value="Detailed">Detailed</MenuItem>
-              <MenuItem value="Trend">Trend Analysis</MenuItem>
-              <MenuItem value="Category">Category Breakdown</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField
-            fullWidth
-            label="Category Filter (optional)"
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            margin="normal"
-            placeholder="e.g., Groceries"
-          />
-          <TextField
-            fullWidth
-            label="Start Date"
-            type="date"
-            value={formData.startDate}
-            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            fullWidth
-            label="End Date"
-            type="date"
-            value={formData.endDate}
-            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={handleSaveReport} variant="contained">
-            {editingId ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+              Refresh
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      {/* Report Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={() => {
-          const report = reports.find(r => r.id === selectedReportId);
-          if (report) openEditDialog(report);
-        }}>
-          <EditIcon sx={{ mr: 1, fontSize: 20 }} /> Edit
-        </MenuItem>
-        <MenuItem onClick={() => handleDeleteReport(selectedReportId)}>
-          <DeleteIcon sx={{ mr: 1, fontSize: 20 }} /> Delete
-        </MenuItem>
-      </Menu>
+      {/* Report Tabs */}
+      <Box sx={{ bgcolor: '#fff', borderRadius: 3, boxShadow: 2, mb: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ borderBottom: '1px solid #e0e0e0' }}
+        >
+          <Tab label="Income vs Expense" />
+          <Tab label="Category Breakdown" />
+          <Tab label="Budget Analysis" />
+          <Tab label="Financial Summary" />
+          <Tab label="Recent Reports" />
+        </Tabs>
+
+        {analysisLoading && (
+          <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {!analysisLoading && (
+          <>
+            {/* Income vs Expense */}
+            {activeTab === 0 && incomeExpenseData && (
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                  {/* Summary Cards */}
+                  <Grid item xs={12} sm={4}>
+                    <Card sx={{ borderRadius: 2, bgcolor: '#e8f5e9' }}>
+                      <CardContent>
+                        <Typography color="textSecondary" gutterBottom>Total Income</Typography>
+                        <Typography variant="h5" sx={{ color: '#4caf50', fontWeight: 700 }}>
+                          {formatINR(incomeExpenseData.totalIncome)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Card sx={{ borderRadius: 2, bgcolor: '#ffebee' }}>
+                      <CardContent>
+                        <Typography color="textSecondary" gutterBottom>Total Expense</Typography>
+                        <Typography variant="h5" sx={{ color: '#f44336', fontWeight: 700 }}>
+                          {formatINR(incomeExpenseData.totalExpense)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Card sx={{ borderRadius: 2, bgcolor: '#e3f2fd' }}>
+                      <CardContent>
+                        <Typography color="textSecondary" gutterBottom>Net Balance</Typography>
+                        <Typography variant="h5" sx={{ color: '#2196f3', fontWeight: 700 }}>
+                          {formatINR(incomeExpenseData.netBalance)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Chart */}
+                  <Grid item xs={12}>
+                    <Card sx={{ borderRadius: 2, p: 2 }}>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Monthly Breakdown</Typography>
+                      <ResponsiveContainer width="100%" height={400}>
+                        <LineChart data={getIncomeExpenseChartData()}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
+                          <Tooltip formatter={(value) => formatINR(value)} />
+                          <Legend />
+                          <Line type="monotone" dataKey="Income" stroke="#4caf50" strokeWidth={2} />
+                          <Line type="monotone" dataKey="Expense" stroke="#f44336" strokeWidth={2} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {/* Category Breakdown */}
+            {activeTab === 1 && categoryData && (
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <Card sx={{ borderRadius: 2, p: 2 }}>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Expense Distribution</Typography>
+                      <ResponsiveContainer width="100%" height={400}>
+                        <PieChart>
+                          <Pie
+                            data={getCategoryChartData()}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percentage }) => `${name}: ${percentage?.toFixed(1)}%`}
+                            outerRadius={120}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {getCategoryChartData().map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => formatINR(value)} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Card sx={{ borderRadius: 2, p: 2 }}>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Category Details</Typography>
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                              <TableCell fontWeight={700}>Category</TableCell>
+                              <TableCell align="right" fontWeight={700}>Amount</TableCell>
+                              <TableCell align="right" fontWeight={700}>Percentage</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {getCategoryChartData().map((row, i) => (
+                              <TableRow key={i}>
+                                <TableCell>{row.name}</TableCell>
+                                <TableCell align="right">{formatINR(row.value)}</TableCell>
+                                <TableCell align="right">{row.percentage?.toFixed(2)}%</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {/* Budget Analysis */}
+            {activeTab === 2 && budgetData && (
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <Card sx={{ borderRadius: 2, p: 2 }}>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Budget vs Actual Comparison</Typography>
+                      <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={budgetData.budgetAnalysis}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="category" />
+                          <YAxis />
+                          <Tooltip formatter={(value) => formatINR(value)} />
+                          <Legend />
+                          <Bar dataKey="budgeted" fill="#8884d8" />
+                          <Bar dataKey="actual" fill="#82ca9d" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Card sx={{ borderRadius: 2, p: 2 }}>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Detailed Analysis</Typography>
+                      <TableContainer>
+                        <Table>
+                          <TableHead>
+                            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                              <TableCell fontWeight={700}>Category</TableCell>
+                              <TableCell align="right" fontWeight={700}>Budgeted</TableCell>
+                              <TableCell align="right" fontWeight={700}>Actual</TableCell>
+                              <TableCell align="right" fontWeight={700}>Variance</TableCell>
+                              <TableCell align="center" fontWeight={700}>Status</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {budgetData.budgetAnalysis.map((row, i) => (
+                              <TableRow key={i} sx={{
+                                bgcolor: row.status === 'Over Budget' ? '#ffebee' : '#e8f5e9'
+                              }}>
+                                <TableCell>{row.category}</TableCell>
+                                <TableCell align="right">{formatINR(row.budgeted)}</TableCell>
+                                <TableCell align="right">{formatINR(row.actual)}</TableCell>
+                                <TableCell align="right" sx={{ color: row.variance > 0 ? '#4caf50' : '#f44336', fontWeight: 700 }}>
+                                  {formatINR(row.variance)}
+                                </TableCell>
+                                <TableCell align="center">
+                                  <Box sx={{
+                                    display: 'inline-block',
+                                    px: 2,
+                                    py: 0.5,
+                                    borderRadius: 2,
+                                    bgcolor: row.status === 'Over Budget' ? '#ffcdd2' : '#c8e6c9',
+                                    color: row.status === 'Over Budget' ? '#d32f2f' : '#388e3c',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600
+                                  }}>
+                                    {row.status}
+                                  </Box>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {/* Financial Summary */}
+            {activeTab === 3 && summaryData && (
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                  {/* Summary Cards */}
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Card sx={{ borderRadius: 2, bgcolor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff' }}>
+                      <CardContent>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>Total Income</Typography>
+                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData.totalIncome)}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Card sx={{ borderRadius: 2, bgcolor: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#fff' }}>
+                      <CardContent>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>Total Expense</Typography>
+                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData.totalExpense)}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Card sx={{ borderRadius: 2, bgcolor: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: '#fff' }}>
+                      <CardContent>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>Net Balance</Typography>
+                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData.netBalance)}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Key Metrics */}
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Card sx={{ borderRadius: 2 }}>
+                      <CardContent>
+                        <Typography variant="body2" color="textSecondary">Transaction Count</Typography>
+                        <Typography variant="h5" fontWeight={700}>{summaryData.transactionCount}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Card sx={{ borderRadius: 2 }}>
+                      <CardContent>
+                        <Typography variant="body2" color="textSecondary">Avg Transaction Amount</Typography>
+                        <Typography variant="h5" fontWeight={700}>{formatINR(summaryData.averageTransactionAmount)}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Card sx={{ borderRadius: 2 }}>
+                      <CardContent>
+                        <Typography variant="body2" color="textSecondary">Date Range</Typography>
+                        <Typography variant="h6" fontWeight={700}>{summaryData.startDate} to {summaryData.endDate}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Top Categories */}
+                  <Grid item xs={12}>
+                    <Card sx={{ borderRadius: 2, p: 2 }}>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Top Expense Categories</Typography>
+                      <TableContainer>
+                        <Table>
+                          <TableHead>
+                            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                              <TableCell fontWeight={700}>Category</TableCell>
+                              <TableCell align="right" fontWeight={700}>Amount</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {Object.entries(summaryData.topExpenseCategories).map(([category, amount], i) => (
+                              <TableRow key={i}>
+                                <TableCell>{category}</TableCell>
+                                <TableCell align="right">{formatINR(amount)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {/* Recent Reports */}
+            {activeTab === 4 && (
+              <Box sx={{ p: 3 }}>
+                {recentReports.length === 0 ? (
+                  <Alert severity="info">No recent reports found</Alert>
+                ) : (
+                  <TableContainer component={Paper}>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                          <TableCell fontWeight={700}>Report Name</TableCell>
+                          <TableCell fontWeight={700}>Type</TableCell>
+                          <TableCell fontWeight={700}>Created Date</TableCell>
+                          <TableCell fontWeight={700}>Date Range</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {recentReports.map((report) => (
+                          <TableRow key={report.id}>
+                            <TableCell fontWeight={600}>{report.name}</TableCell>
+                            <TableCell>{report.type}</TableCell>
+                            <TableCell>{report.createdDate}</TableCell>
+                            <TableCell>{report.startDate} to {report.endDate}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Box>
+            )}
+          </>
+        )}
+      </Box>
     </Box>
   );
 };
